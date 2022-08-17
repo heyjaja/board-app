@@ -1,11 +1,15 @@
 import { BadRequestException, PipeTransform } from '@nestjs/common';
-import { BoardStatus } from '../models/board.model';
+import { BoardStatus } from '../models/board-status.enum';
 
 export class BoardStatusValidationPipe implements PipeTransform {
   readonly StatusOptions = [BoardStatus.PUBLIC, BoardStatus.PRIVATE];
 
   transform(value: any) {
-    value.status = value.status.toUpperCase();
+    if (value.status) {
+      value.status = value.status.toUpperCase();
+    } else {
+      return;
+    }
 
     if (!this.isStatusValid(value.status)) {
       throw new BadRequestException(

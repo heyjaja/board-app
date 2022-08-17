@@ -9,43 +9,51 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { ObjectId } from 'mongoose';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dtos/create-board.dto';
 import { UpdateBoardDto } from './dtos/update-board.dto';
-import { Board } from './models/board.model';
 import { BoardStatusValidationPipe } from './pipes/board-status-validation.pipe';
+import { Board } from './schemas/board.schema';
 
 @Controller('boards')
 export class BoardsController {
   constructor(private boardService: BoardsService) {}
 
   @Get()
-  getAllboards(): Board[] {
-    return this.boardService.getAllBoards();
+  async getAllboards(): Promise<Board[]> {
+    const boards = await this.boardService.getAllBoards();
+
+    return boards;
   }
 
   @Post()
   @UsePipes(ValidationPipe)
-  createBoard(@Body() createBoardDto: CreateBoardDto): Board {
-    return this.boardService.createBoard(createBoardDto);
+  async createBoard(@Body() createBoardDto: CreateBoardDto): Promise<Board> {
+    const board = await this.boardService.createBoard(createBoardDto);
+    return board;
   }
 
   @Get(':id')
-  getBoardById(@Param('id') boardId: string): Board {
-    return this.boardService.getBoardById(boardId);
+  async getBoardById(@Param('id') boardId: string): Promise<Board> {
+    const board = await this.boardService.getBoardById(boardId);
+    return board;
   }
 
   @Delete(':id')
-  deleteBoard(@Param('id') boardId: string): string {
-    this.boardService.deleteBoard(boardId);
-    return 'success';
+  async deleteBoard(@Param('id') boardId: string): Promise<Board> {
+    const result = await this.boardService.deleteBoard(boardId);
+
+    return result;
   }
 
   @Patch(':id')
-  updateBoard(
+  async updateBoard(
     @Param('id') boardId: string,
     @Body(BoardStatusValidationPipe) updateBoardDto: UpdateBoardDto,
-  ): Board {
-    return this.boardService.updateBoard(boardId, updateBoardDto);
+  ): Promise<Board> {
+    const result = await this.boardService.updateBoard(boardId, updateBoardDto);
+
+    return result;
   }
 }

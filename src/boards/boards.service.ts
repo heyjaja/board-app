@@ -1,45 +1,89 @@
-import { Body, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Body,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, ObjectId } from 'mongoose';
 import { CreateBoardDto } from './dtos/create-board.dto';
 import { UpdateBoardDto } from './dtos/update-board.dto';
-import { Board, BoardStatus } from './models/board.model';
+import { BoardStatus } from './models/board-status.enum';
+import { Board, BoardDocument } from './schemas/board.schema';
 
 @Injectable()
 export class BoardsService {
-  private boards: Board[] = [];
+  constructor(
+    @InjectModel(Board.name) private boardModel: Model<BoardDocument>,
+  ) {}
 
-  getAllBoards(): Board[] {
-    return this.boards;
+  /*
+   * 게시글 목록
+   */
+  async getAllBoards(): Promise<Board[]> {
+    const boards = await this.boardModel.find().lean();
+
+    if (!boards) {
+      throw new NotFoundException('게시글이 없습니다.');
+    }
+
+    return boards;
   }
 
-  createBoard(@Body() createBoardDto: CreateBoardDto): Board {
-    const { title, description } = createBoardDto;
-    const board = {
-      id: String(this.boards.length + 1),
-      title,
-      description,
-      status: BoardStatus.PUBLIC,
-    };
+  /*
+   * 게시글 읽기
+   */
+  async getBoardById(boardId: string): Promise<Board> {
+    const board = await this.boardModel.findById(boardId).lean();
 
-    this.boards.push(board);
-    return board;
-  }
-
-  getBoardById(boardId: string): Board {
-    const board = this.boards.find((board) => board.id === boardId);
     if (!board) {
       throw new NotFoundException(`${boardId} 번 게시글을 찾을 수 없습니다.`);
     }
+
     return board;
   }
 
-  deleteBoard(boardId: string): void {
-    const foundBoard = this.getBoardById(boardId);
-    this.boards = this.boards.filter((board) => board.id !== foundBoard.id);
+  /*
+   * 게시글 쓰기
+   */
+  async createBoard(createBoardDto: CreateBoardDto): Promise<Board> {
+    const { user, title, description } = createBoardDto;
+    const board = await this.boardModel.create({
+      user,
+      title,
+      description,
+      regdate: new Date(),
+      status: BoardStatus.PUBLIC,
+    });
+
+    if (!board) {
+      throw new InternalServerErrorException('글쓰기 실패');
+    }
+
+    return board;
   }
 
-  updateBoard(boardId: string, updateBoard: UpdateBoardDto): Board {
-    const board = this.getBoardById(boardId);
-    Object.assign(board, updateBoard);
+  /*
+   * 게시글 삭제
+   */
+  async deleteBoard(boardId: string): Promise<Board> {
+    const result = await this.boardModel.findByIdAndRemove(boardId);
+
+    return result;
+  }
+
+  /*
+   * 게시글 수정
+   */
+  async updateBoard(
+    boardId: string,
+    updateBoardDto: UpdateBoardDto,
+  ): Promise<Board> {
+    const board = await this.boardModel.findByIdAndUpdate(
+      boardId,
+      updateBoardDto,
+    );
+
     return board;
   }
 }
