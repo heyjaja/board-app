@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { User } from 'src/auth/schemas/user.schema';
 import { BoardStatus } from '../models/board-status.enum';
 
 @Schema()
 export class Board {
-  @Prop()
-  user: string;
+  @Prop({ ref: 'User', required: true })
+  user: User;
 
   @Prop()
   title: string;
