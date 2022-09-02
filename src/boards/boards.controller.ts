@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
   Post,
@@ -21,6 +22,7 @@ import { Board } from './schemas/board.schema';
 @Controller('boards')
 @UseGuards(AuthGuard())
 export class BoardsController {
+  private logger = new Logger('BoardsController');
   constructor(private boardService: BoardsService) {}
 
   @Get()
@@ -37,12 +39,18 @@ export class BoardsController {
     @Req() req,
   ): Promise<Board> {
     const board = await this.boardService.createBoard(createBoardDto, req.user);
+    this.logger.verbose(
+      `User ${req.user.email} creating a new board. Payload: ${JSON.stringify(
+        createBoardDto,
+      )}`,
+    );
     return board;
   }
 
   @Get('user')
   async getAllBoardsByUser(@Req() req): Promise<Board[]> {
     const boards = await this.boardService.getAllBoardsByUser(req.user);
+    this.logger.verbose(`User ${req.user.email} trying to get all boards`);
 
     return boards;
   }
